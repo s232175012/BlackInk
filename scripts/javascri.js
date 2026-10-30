@@ -35,7 +35,8 @@ function closeWelcome(){
 window.showWelcome=showWelcome; window.closeWelcome=closeWelcome;
 window.addEventListener('load',()=>{
   if(!document.getElementById('welcomeModal')) return;
-  const last=localStorage.getItem('BI_WELCOMED'); const now=Date.now(); const oneDay=86400000;
+  const last=localStorage.getItem('BI_WELCOMED'); const now=Date.now();
+  const oneDay= 0.10*60*60*1000;
   if(!last||(now-parseInt(last))>oneDay) setTimeout(showWelcome,200);
   document.getElementById('welcomeModal')?.addEventListener('click',e=>{ if(e.target.id==='welcomeModal') closeWelcome(); });
 });
