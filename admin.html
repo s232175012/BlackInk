@@ -9,7 +9,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyBeaXMto9uEuqswlZNB4zWgTuNLhGKY1mM",
   authDomain: "mamthethwa-db.firebaseapp.com",
@@ -18,12 +17,9 @@ const firebaseConfig = {
   messagingSenderId: "884680583899",
   appId: "1:884680583899:web:685d16794860485afd7afe"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-
-// Make it available to your site
 window.db = db;
 window.auth = auth;
 window.fbMethods = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, signInWithEmailAndPassword, signOut, onAuthStateChanged };
@@ -32,18 +28,16 @@ console.log("✅ SECURE Black Ink + Mamthethwa linked to mamthethwa-db with Admi
 </head>
 <body>
 <header><div class="logo">ADMIN <span>BLACK INK</span></div><div class="header-right"><a href="index.html" class="admin-pill">SHOP</a><button class="admin-pill" onclick="adminLogout()">LOGOUT</button></div></header>
-
 <div id="loginBox" class="login-box">
   <h3>BLACK INK ADMIN</h3><p class="small"></p>
   <label>Username</label><input id="lUser"><label>Password</label><input id="lPass" type="password"><p id="lError" class="error"></p>
   <button class="btn-black full" onclick="adminLogin()">Login</button>
 </div>
-
 <div id="adminPanel" class="hidden">
   <div class="tabs"><button class="tab active" onclick="switchTab('add')">+ Add Stock</button><button class="tab" onclick="switchTab('products')">Products</button><button class="tab" onclick="switchTab('orders')">Orders Table</button></div>
   <div class="admin-wrap">
     <div id="tab-add" class="admin-card">
-      <h3>Add Stock — 5 Pictures from Device</h3>
+      <h3>Add Stock — 4 Pictures from Device</h3>
       <label>Name *</label><input id="aName" placeholder="Combo Denim">
       <label>Category *</label>
       <select id="aCat"><option>Combo</option><option>Pants</option><option>Shorts</option><option>T-shirt</option><option>Jacket</option></select>
@@ -51,12 +45,12 @@ console.log("✅ SECURE Black Ink + Mamthethwa linked to mamthethwa-db with Admi
       <label>Sizes Stock e.g. S:5,M:10,L:3 *</label><input id="aSizes" placeholder="S:5,M:10,L:3">
       <label>Upload 4 Pictures Bafo.</label>
       <div class="upload-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0">
-  <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,0)"><span id="up0">+ Pic 1 *</span><img id="prev0" class="prev"></label>
-  <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,1)"><span id="up1">+ Pic 2</span><img id="prev1" class="prev"></label>
-  <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,2)"><span id="up2">+ Pic 3</span><img id="prev2" class="prev"></label>
-  <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,3)"><span id="up3">+ Pic 4</span><img id="prev3" class="prev"></label>
-</div>
-<div id="sizeInfo" style="font-size:10px;font-weight:800;padding:8px;margin:8px 0;border-radius:8px;border:1.5px solid #000;background:#fff">Total: 0KB / 900KB limit (0/4 pics)</div>
+        <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,0)"><span id="up0">+ Pic 1 *</span><img id="prev0" class="prev"></label>
+        <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,1)"><span id="up1">+ Pic 2</span><img id="prev1" class="prev"></label>
+        <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,2)"><span id="up2">+ Pic 3</span><img id="prev2" class="prev"></label>
+        <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,3)"><span id="up3">+ Pic 4</span><img id="prev3" class="prev"></label>
+      </div>
+      <div id="sizeInfo" style="font-size:10px;font-weight:800;padding:8px;margin:8px 0;border-radius:8px;border:1.5px solid #000;background:#fff">Total: 0KB / 900KB limit (0/4 pics)</div>
       <button class="btn-black full" onclick="addProduct()">Publish Product</button>
     </div>
     <div id="tab-products" class="admin-card hidden"><div id="adminProducts"></div></div>
