@@ -272,7 +272,7 @@ function closeWelcome(){
 window.addEventListener('load', ()=>{
   const last = localStorage.getItem('BI_WELCOMED');
   const now = Date.now();
-  const oneDay = 24*60*60*1000;
+  const oneDay = 0*24*60*60*1000;
   // Show if never welcomed or last welcome > 1 day ago
   if(!last || (now - parseInt(last)) > oneDay){
     setTimeout(showWelcome, 200); // 0.2s after page loads
