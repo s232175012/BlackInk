@@ -43,7 +43,7 @@ window.addEventListener('load', ()=>{
   if(!document.getElementById('welcomeModal')) return;
   const last = localStorage.getItem('BI_WELCOMED');
   const now = Date.now();
-  const oneDay = 24*60*60*1000;
+  const oneDay = 0*24*60*60*1000;
   if(!last || (now - parseInt(last)) > oneDay){
     setTimeout(showWelcome, 200);
   }
