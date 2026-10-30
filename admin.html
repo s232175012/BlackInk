@@ -49,14 +49,14 @@ console.log("✅ SECURE Black Ink + Mamthethwa linked to mamthethwa-db with Admi
       <select id="aCat"><option>Combo</option><option>Pants</option><option>Shorts</option><option>T-shirt</option><option>Jacket</option></select>
       <label>Price R *</label><input id="aPrice" type="number" placeholder="750">
       <label>Sizes Stock e.g. S:5,M:10,L:3 *</label><input id="aSizes" placeholder="S:5,M:10,L:3">
-      <label>Upload 5 Pictures</label>
-      <div class="upload-grid">
-        <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,0)"><span id="up0">+ Pic 1 *</span><img id="prev0" class="prev"></label>
-        <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,1)"><span id="up1">+ Pic 2</span><img id="prev1" class="prev"></label>
-        <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,2)"><span id="up2">+ Pic 3</span><img id="prev2" class="prev"></label>
-        <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,3)"><span id="up3">+ Pic 4</span><img id="prev3" class="prev"></label>
-        <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,4)"><span id="up4">+ Pic 5</span><img id="prev4" class="prev"></label>
-      </div>
+      <label>Upload 4 Pictures Bafo.</label>
+      <div class="upload-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0">
+  <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,0)"><span id="up0">+ Pic 1 *</span><img id="prev0" class="prev"></label>
+  <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,1)"><span id="up1">+ Pic 2</span><img id="prev1" class="prev"></label>
+  <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,2)"><span id="up2">+ Pic 3</span><img id="prev2" class="prev"></label>
+  <label class="upload-box"><input type="file" accept="image/*" hidden onchange="handleImg(this,3)"><span id="up3">+ Pic 4</span><img id="prev3" class="prev"></label>
+</div>
+<div id="sizeInfo" style="font-size:10px;font-weight:800;padding:8px;margin:8px 0;border-radius:8px;border:1.5px solid #000;background:#fff">Total: 0KB / 900KB limit (0/4 pics)</div>
       <button class="btn-black full" onclick="addProduct()">Publish Product</button>
     </div>
     <div id="tab-products" class="admin-card hidden"><div id="adminProducts"></div></div>
