@@ -88,7 +88,7 @@ function showOrderSuccessCard({code,items,total,name}){
     setTimeout(()=>modal.remove(),300);
     // OPEN WHATSAPP AUTOMATICALLY - NO CONFIRM
     const list=items.map(c=>`• ${c.name} Size ${c.size} x${c.qty}=R${c.price*c.qty}`).join('\n');
-    const msg=`🔥 BLACK INK ORDER ${code} 🔥\n${list}\nTotal: R${total}\nName: ${name}\nTrack: ${code}`;
+    const msg=`🔥 BLACK INK ORDER ${code} 🔥\n\n${list}\n\nTotal: R${total}\nName: ${name}\nTrack: ${code}`;
     window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`,'_blank');
   };
 }
