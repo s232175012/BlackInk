@@ -1,5 +1,5 @@
 const WHATSAPP="27697479557";
-let tempImgs=["","","",""]; //4 PICS ONLY
+let tempImgs=["","","",""];
 let products=[], cart=[], current=null, activeCat='all';
 const MAX_W = 480;
 const QUALITY = 0.45;
@@ -20,42 +20,85 @@ async function loadProducts(){
   });
 }
 loadProducts();
-// ===== WELCOME MESSAGE - INDEX LOAD =====
+
+// ===== WELCOME =====
 function showWelcome(){
-  const modal = document.getElementById('welcomeModal');
-  const box = document.getElementById('welcomeBox');
-  if(!modal) return;
-  modal.style.opacity = '1';
-  modal.style.pointerEvents = 'all';
-  if(box) box.style.transform = 'scale(1)';
+  const modal=document.getElementById('welcomeModal'); const box=document.getElementById('welcomeBox');
+  if(!modal) return; modal.style.opacity='1'; modal.style.pointerEvents='all'; if(box) box.style.transform='scale(1)';
 }
 function closeWelcome(){
-  const modal = document.getElementById('welcomeModal');
-  const box = document.getElementById('welcomeBox');
-  if(box) box.style.transform = 'scale(.9)';
-  if(modal) modal.style.opacity = '0';
-  setTimeout(()=>{ if(modal) modal.style.pointerEvents='none'; }, 400);
-  localStorage.setItem('BI_WELCOMED', Date.now());
+  const modal=document.getElementById('welcomeModal'); const box=document.getElementById('welcomeBox');
+  if(box) box.style.transform='scale(.9)'; if(modal) modal.style.opacity='0';
+  setTimeout(()=>{ if(modal) modal.style.pointerEvents='none'; },400);
+  localStorage.setItem('BI_WELCOMED',Date.now());
 }
-window.showWelcome = showWelcome;
-window.closeWelcome = closeWelcome;
-window.addEventListener('load', ()=>{
+window.showWelcome=showWelcome; window.closeWelcome=closeWelcome;
+window.addEventListener('load',()=>{
   if(!document.getElementById('welcomeModal')) return;
-  const last = localStorage.getItem('BI_WELCOMED');
-  const now = Date.now();
-  const oneDay = 24*60*60*1000;
-  if(!last || (now - parseInt(last)) > oneDay){
-    setTimeout(showWelcome, 200);
-  }
-  document.getElementById('welcomeModal')?.addEventListener('click', (e)=>{
-    if(e.target.id === 'welcomeModal') closeWelcome();
-  });
+  const last=localStorage.getItem('BI_WELCOMED'); const now=Date.now(); const oneDay=86400000;
+  if(!last||(now-parseInt(last))>oneDay) setTimeout(showWelcome,200);
+  document.getElementById('welcomeModal')?.addEventListener('click',e=>{ if(e.target.id==='welcomeModal') closeWelcome(); });
 });
+
+// ===== BEAUTIFUL BI CARD =====
+function ensureSuccessStyles(){
+  if(document.getElementById('biSuccessStyle')) return;
+  const s=document.createElement('style'); s.id='biSuccessStyle';
+  s.innerHTML=`
+  #orderSuccessModal{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:.3s}
+  #orderSuccessModal.show{opacity:1;pointer-events:all}
+  #orderSuccessBox{background:#fff;border:3px solid #000;border-radius:22px;max-width:380px;width:100%;padding:0;overflow:hidden;box-shadow:10px 10px 0 #000;transform:scale(.92);transition:.35s cubic-bezier(.34,1.56,.64,1)}
+  #orderSuccessModal.show #orderSuccessBox{transform:scale(1)}
+  .bi-card-top{background:#111;color:#fff;padding:18px 20px;text-align:center}
+  .bi-card-top h2{margin:0;font-size:22px;letter-spacing:2px;font-weight:900}
+  .bi-card-top .bi-code{margin:8px auto 0;background:#fff;color:#000;padding:6px 14px;border-radius:999px;display:inline-block;font-weight:900;letter-spacing:1px;border:2px solid #000}
+  .bi-card-body{padding:16px 18px}
+  .bi-card-body .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed #ddd;font-size:12px}
+  .bi-card-body .row.total{font-weight:900;font-size:14px;border-bottom:none;background:#ffcc00;border:2px solid #000;border-radius:10px;padding:10px 12px;margin-top:10px}
+  .bi-ok-btn{width:100%;background:#000;color:#fff;border:3px solid #000;border-radius:999px;padding:14px;font-weight:900;font-size:14px;letter-spacing:1px;cursor:pointer;box-shadow:4px 4px 0 #000;margin-top:14px;transition:.1s}
+  .bi-ok-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000}
+  `;
+  document.head.appendChild(s);
+}
+function showOrderSuccessCard({code,items,total,name}){
+  ensureSuccessStyles();
+  let old=document.getElementById('orderSuccessModal'); if(old) old.remove();
+  const itemsHtml=items.map(i=>`<div class="row"><span>${i.name} Size ${i.size} x${i.qty}</span><span>R${i.price*i.qty}</span></div>`).join('');
+  const modal=document.createElement('div'); modal.id='orderSuccessModal';
+  modal.innerHTML=`
+  <div id="orderSuccessBox">
+    <div class="bi-card-top">
+      <div style="font-size:32px">✅</div>
+      <h2>ORDER SAVED!</h2>
+      <div class="bi-code">${code}</div>
+      <div style="font-size:11px;margin-top:6px;opacity:.7">Siyabulela, ${name}!</div>
+    </div>
+    <div class="bi-card-body">
+      ${itemsHtml}
+      <div class="row total"><span>TOTAL</span><span>R${total}</span></div>
+      <div style="font-size:10px;opacity:.6;margin-top:10px;text-align:center">Track with ${code} • Est 2-3 days<br>Admin will update status & days left</div>
+      <button class="bi-ok-btn" id="biOkBtn">OK — OPEN WHATSAPP 🔥</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  setTimeout(()=>modal.classList.add('show'),20);
+  
+  document.getElementById('biOkBtn').onclick=()=>{
+    modal.classList.remove('show');
+    setTimeout(()=>modal.remove(),300);
+    // OPEN WHATSAPP AUTOMATICALLY - NO CONFIRM
+    const list=items.map(c=>`• ${c.name} Size ${c.size} x${c.qty}=R${c.price*c.qty}`).join('\n');
+    const msg=`🔥 BLACK INK ORDER ${code} 🔥\n${list}\nTotal: R${total}\nName: ${name}\nTrack: ${code}`;
+    window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`,'_blank');
+  };
+}
+
 const hoursBox=document.getElementById('hoursBox');
 if(hoursBox){
   const days=[['Thursday','09:00 - 18:00'],['Friday','09:00 - 18:00'],['Saturday','09:00 - 18:00'],['Sunday','Closed'],['Monday','09:00 - 18:00'],['Tuesday','09:00 - 18:00']];
   hoursBox.innerHTML=days.map(d=>`<div><span>${d[0]}</span><span>${d[1]}</span></div>`).join('');
 }
+
 if(document.getElementById('products')){
   function render(){
     const box=document.getElementById('products'); if(!box) return; box.innerHTML="";
@@ -70,11 +113,7 @@ if(document.getElementById('products')){
     });
     const cc=document.getElementById('cartCount'); if(cc) cc.innerText=cart.reduce((a,b)=>a+b.qty,0);
   }
-  window.filterCat=(cat,btn)=>{
-    activeCat=cat;
-    document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active'); render();
-  }
+  window.filterCat=(cat,btn)=>{ activeCat=cat; document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); render(); }
   window.openProduct=id=>{
     current=products.find(x=>x.id==id);
     document.getElementById('mImage').src=current.images[0];
@@ -94,20 +133,11 @@ if(document.getElementById('products')){
   }
   window.setMain=(src,el)=>{document.getElementById('mImage').src=src;document.querySelectorAll('.thumbs img').forEach(i=>i.classList.remove('active'));el.classList.add('active')}
   window.addToCart=()=>{
-    const size=document.getElementById('mSize').value; 
-    const qty=parseInt(document.getElementById('mQty').value);
+    const size=document.getElementById('mSize').value; const qty=parseInt(document.getElementById('mQty').value);
     if(!size){ alert("⚠️ Select size"); return; }
-    if(current.sizes[size] === 0){ alert(`❌ Size ${size} is OUT of stock!`); return; }
-    if(qty>current.sizes[size]){
-      document.getElementById('mQtyError').innerText="Only "+current.sizes[size]+" left";
-      alert(`❌ Only ${current.sizes[size]} left in Size ${size}. You tried ${qty}.`);
-      return;
-    }
-    cart.push({id:current.id,name:current.name,size,qty,price:current.price}); 
-    closeModal('productModal'); 
-    render(); 
-    toast(`Added 🛒 ${size} x${qty}`); 
-    openCart();
+    if(current.sizes[size]===0){ alert(`❌ Size ${size} is OUT!`); return; }
+    if(qty>current.sizes[size]){ document.getElementById('mQtyError').innerText="Only "+current.sizes[size]+" left"; alert(`❌ Only ${current.sizes[size]} left`); return; }
+    cart.push({id:current.id,name:current.name,size,qty,price:current.price}); closeModal('productModal'); render(); toast(`Added 🛒 ${size} x${qty}`); openCart();
   }
   window.openCart=()=>{
     if(cart.length==0){toast('Bag empty');return}
@@ -116,197 +146,141 @@ if(document.getElementById('products')){
   }
   window.removeCart=i=>{cart.splice(i,1);render();if(cart.length==0)closeModal('cartModal');else openCart()}
   window.closeModal=id=>document.getElementById(id).classList.add('hidden');
-  
-  // ✅ FINAL BUY BUTTON - SAVES TO FIREBASE EVEN WITHOUT WHATSAPP
-  window.submitOrder = async e => {
+
+  // ===== FINAL BUY BUTTON - 1.Save 2.Decrease 3.Beautiful Card + Auto WhatsApp =====
+  window.submitOrder=async e=>{
     e.preventDefault();
-    const btn = e.target.querySelector('button');
-    const oldText = btn ? btn.innerText : '';
-    if(btn){ btn.innerText = '⏳ Saving...'; btn.disabled = true; }
-
-    const name = document.getElementById('custName').value.trim();
-    const phone = document.getElementById('custPhone').value.trim();
-    const del = document.getElementById('custCampus').value;
-    const addr = document.getElementById('custAddress').value;
-    
-    if(cart.length === 0){ 
-      alert("Bag empty"); 
-      if(btn){ btn.innerText = oldText; btn.disabled = false; }
-      return; 
-    }
-    
-    // 1. CHECK STOCK
+    const btn=e.target.querySelector('button'); const oldText=btn?btn.innerText:''; if(btn){btn.innerText='⏳ Saving...';btn.disabled=true;}
+    const name=document.getElementById('custName').value.trim();
+    const phone=document.getElementById('custPhone').value.trim();
+    const del=document.getElementById('custCampus').value;
+    const addr=document.getElementById('custAddress').value;
+    if(cart.length===0){alert("Bag empty"); if(btn){btn.innerText=oldText;btn.disabled=false;} return;}
     for(let c of cart){
-      const prod = products.find(p=>p.id==c.id);
-      if(!prod){ alert(`❌ Product ${c.name} not found`); if(btn){ btn.innerText = oldText; btn.disabled = false; } return; }
-      if((prod.sizes[c.size]||0) < c.qty){
-        alert(`❌ Sorry! Size ${c.size} for ${prod.name} only has ${prod.sizes[c.size]||0} left. You tried ${c.qty}.`);
-        if(btn){ btn.innerText = oldText; btn.disabled = false; }
-        return;
-      }
+      const prod=products.find(p=>p.id==c.id);
+      if(!prod||(prod.sizes[c.size]||0)<c.qty){ alert(`❌ Size ${c.size} for ${c.name} only has ${(prod?.sizes[c.size]||0)} left`); if(btn){btn.innerText=oldText;btn.disabled=false;} return; }
     }
+    const code="BI"+Math.floor(1000+Math.random()*9000);
+    let list="",total=0; cart.forEach(c=>{list+=`• ${c.name} Size ${c.size} x${c.qty}=R${c.price*c.qty}\n`;total+=c.price*c.qty;});
+    const order={code,name,phone,delivery:del,address:addr,items:[...cart],total,status:"Pending",est:"2-3 days",date:new Date().toLocaleString(),createdAt:Date.now()};
 
-    // 2. CREATE ORDER
-    const code = "BI" + Math.floor(1000 + Math.random()*9000);
-    let list = "", total = 0;
-    cart.forEach(c=>{ list+=`• ${c.name} Size ${c.size} x${c.qty}=R${c.price*c.qty}\n`; total+=c.price*c.qty; });
-    const order = { code, name, phone, delivery: del, address: addr, items: [...cart], total, status: "Pending", est: "2-3 days", date: new Date().toLocaleString(), createdAt: Date.now() };
-
-    // 3. SAVE TO FIREBASE FIRST - MUST SUCCEED EVEN WITHOUT WHATSAPP
+    // 1. SAVE TO FIREBASE
     try{
       const { collection, addDoc, doc, updateDoc } = getFB();
-      await addDoc(collection(getDB(), "blackink_orders"), order);
-      console.log("✅ Order saved to admin table:", code);
+      await addDoc(collection(getDB(),"blackink_orders"),order);
+      // 2. DECREASE STOCK
       for(let c of cart){
-        const prod = products.find(p=>p.id==c.id);
-        if(prod){
-          prod.sizes[c.size] -= c.qty;
-          if(prod.sizes[c.size] < 0) prod.sizes[c.size] = 0;
-          await updateDoc(doc(getDB(), "blackink_products", prod.id), {sizes: prod.sizes});
-        }
+        const prod=products.find(p=>p.id==c.id);
+        if(prod){ prod.sizes[c.size]-=c.qty; if(prod.sizes[c.size]<0) prod.sizes[c.size]=0; await updateDoc(doc(getDB(),"blackink_products",prod.id),{sizes:prod.sizes}); }
       }
     }catch(err){
-      console.error("Firebase save failed:", err);
-      alert(`❌ Order NOT saved! Error: ${err.message}\n\nGo to Firebase Console > Firestore > Rules and set:\nallow create: if true; for blackink_orders\n\nThen try again.`);
-      if(btn){ btn.innerText = oldText; btn.disabled = false; }
-      return;
+      console.error(err); alert("❌ Save failed: "+err.message+"\nFix Firestore Rules: allow create: if true; for blackink_orders"); if(btn){btn.innerText=oldText;btn.disabled=false;} return;
     }
 
-    // 4. UPDATE UI - 2left -> 1left -> OUT
-    render();
-    if(typeof renderAdminP === 'function') renderAdminP();
-    if(typeof renderAdminO === 'function') renderAdminO();
-    toast(`✅ Order ${code} saved to admin!`);
-
-    // 5. CLEAR CART + GIVE BI CODE - Even without WhatsApp, customer has code and order is in admin
-    const cartCopy = [...cart];
-    cart = [];
-    render();
-    closeModal('cartModal');
-    e.target.reset();
-    if(btn){ btn.innerText = oldText; btn.disabled = false; }
-
-    alert(`✅ ORDER SAVED! BI Code: ${code}\n\n${list}\nTotal R${total}\n\nYour Is Saved.`);
-
-    // 6. TRY WHATSAPP - OPTIONAL
-    const msg = `🔥 BLACK INK ORDER ${code} 🔥\n${list}\nTotal: R${total}\nName: ${name}\nPhone: ${phone}\nDelivery: ${del}\nAddr: ${addr}\nTrack: ${code}`;
-    const waUrl = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
-    try{
-      const win = window.open(waUrl, '_blank');
-      if(!win){
-        if(confirm(`WhatsApp popup blocked.\n\nYour order ${code} is ALREADY SAVED in admin!\n\nClick OK to open WhatsApp manually, or Cancel to just keep your BI code.`)){
-          location.href = waUrl;
-        }
-      }
-    }catch{
-      console.log("WhatsApp open failed, but order already saved:", code);
-    }
+    render(); if(typeof renderAdminP==='function') renderAdminP(); if(typeof renderAdminO==='function') renderAdminO();
+    const savedItems=[...cart]; const savedName=name; const savedTotal=total; const savedCode=code;
+    cart=[]; render(); closeModal('cartModal'); e.target.reset(); if(btn){btn.innerText=oldText;btn.disabled=false;}
+    
+    // 3. BEAUTIFUL CARD WITH OK -> AUTO OPEN WHATSAPP
+    showOrderSuccessCard({code:savedCode,items:savedItems,total:savedTotal,name:savedName});
   }
 
+  // ===== TRACK ORDER - SHOWS STATUS, DAYS LEFT, ITEMS, TOTAL =====
   window.trackOrder=async ()=>{
     const code=document.getElementById('trackInput').value.trim().toUpperCase();
     if(!code){toast('Enter BI code');return}
     const { collection, getDocs } = getFB();
-    const snap = await getDocs(collection(getDB(), "blackink_orders"));
-    const order = snap.docs.map(d=>d.data()).find(o=>o.code==code);
+    const snap=await getDocs(collection(getDB(),"blackink_orders"));
+    const order=snap.docs.map(d=>d.data()).find(o=>o.code==code);
     const box=document.getElementById('trackResult');
-    if(!order){box.innerHTML=`<div style="background:#fff;border:2px solid #111;padding:10px;border-radius:10px;margin-top:10px">❌ ${code} not found</div>`;return}
-    box.innerHTML=`<div style="background:#fff;border:2px solid #111;padding:12px;border-radius:12px;margin-top:10px"><b>${order.code}</b> - ${order.status} • Est ${order.est}<br>Total R${order.total}<br><small>${order.date}</small></div>`;
+    if(!order){ box.innerHTML=`<div style="background:#fff;border:2px solid #111;padding:10px;border-radius:10px;margin-top:10px">❌ ${code} not found</div>`; return; }
+    const itemsHtml=order.items.map(i=>`• ${i.name} Size ${i.size} x${i.qty} = R${i.price*i.qty}`).join('<br>');
+    box.innerHTML=`
+      <div style="background:#fff;border:3px solid #111;border-radius:16px;padding:14px;margin-top:12px;box-shadow:6px 6px 0 #000">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <b style="font-size:16px">${order.code}</b>
+          <span style="background:#ffcc00;border:1.5px solid #000;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:900">${order.status}</span>
+        </div>
+        <div style="margin:10px 0;padding:10px;background:#f5f5f5;border-radius:10px;border:1.5px solid #000;font-size:12px;line-height:1.6">
+          ${itemsHtml}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <div style="flex:1;background:#111;color:#fff;border-radius:10px;padding:8px;text-align:center"><div style="font-size:10px;opacity:.6">TOTAL</div><b>R${order.total}</b></div>
+          <div style="flex:1;background:#fff;border:2px solid #000;border-radius:10px;padding:8px;text-align:center"><div style="font-size:10px;opacity:.6">DAYS LEFT</div><b>${order.est}</b></div>
+        </div>
+        <div style="font-size:10px;opacity:.6;margin-top:8px;text-align:center">Ordered: ${order.date} • ${order.delivery}</div>
+      </div>`;
   }
 }
+
 if(document.getElementById('loginBox')){
   window.handleImg=(input,idx)=>{
     const file=input.files[0]; if(!file) return;
-    if(file.size > 10*1024*1024){ alert("Image too big! Please select smaller image or crop it first."); input.value=""; return; }
+    if(file.size>10*1024*1024){alert("Image too big!");input.value="";return;}
     const reader=new FileReader();
     reader.onload=e=>{
       const img=new Image();
       img.onload=()=>{
-        const canvas=document.createElement('canvas'); 
-        let w=img.width,h=img.height; 
-        if(w>MAX_W){h=h*(MAX_W/w);w=MAX_W}
-        if(h>700){w=w*(700/h);h=700}
-        canvas.width=w; canvas.height=h; 
-        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        const canvas=document.createElement('canvas'); let w=img.width,h=img.height;
+        if(w>MAX_W){h=h*(MAX_W/w);w=MAX_W} if(h>700){w=w*(700/h);h=700}
+        canvas.width=w; canvas.height=h; canvas.getContext('2d').drawImage(img,0,0,w,h);
         tempImgs[idx]=canvas.toDataURL('image/jpeg',QUALITY);
-        document.getElementById('prev'+idx).src=tempImgs[idx]; 
-        document.getElementById('prev'+idx).style.display='block'; 
-        document.getElementById('up'+idx).parentElement.classList.add('has');
-        updateSizeInfo();
+        document.getElementById('prev'+idx).src=tempImgs[idx]; document.getElementById('prev'+idx).style.display='block';
+        document.getElementById('up'+idx).parentElement.classList.add('has'); updateSizeInfo();
       }; img.src=e.target.result;
     }; reader.readAsDataURL(file);
   }
   function updateSizeInfo(){
-    const totalBytes = tempImgs.join('').length;
-    const totalKB = Math.round(totalBytes * 0.75 / 1024);
-    let info = document.getElementById('sizeInfo');
-    if(!info){
-      info = document.createElement('div');
-      info.id = 'sizeInfo';
-      info.style.cssText = 'font-size:10px;font-weight:800;padding:8px;margin:8px 0;border-radius:8px;border:1.5px solid #000';
-      const grid = document.querySelector('.upload-grid');
-      if(grid) grid.after(info);
-    }
-    if(info){
-      info.innerText = `Total: ${totalKB}KB / 900KB limit (${tempImgs.filter(x=>x).length}/4 pics) - 480px @ 0.45 quality`;
-      info.style.background = totalKB > 900 ? '#ff4444' : totalKB > 700 ? '#ffcc00' : '#fff';
-      info.style.color = totalKB > 900 ? '#fff' : '#000';
-    }
+    const totalBytes=tempImgs.join('').length; const totalKB=Math.round(totalBytes*0.75/1024);
+    let info=document.getElementById('sizeInfo');
+    if(!info){ info=document.createElement('div'); info.id='sizeInfo'; info.style.cssText='font-size:10px;font-weight:800;padding:8px;margin:8px 0;border-radius:8px;border:1.5px solid #000'; const grid=document.querySelector('.upload-grid'); if(grid) grid.after(info); }
+    if(info){ info.innerText=`Total: ${totalKB}KB / 900KB limit (${tempImgs.filter(x=>x).length}/4 pics)`; info.style.background=totalKB>900?'#ff4444':totalKB>700?'#ffcc00':'#fff'; info.style.color=totalKB>900?'#fff':'#000'; }
   }
   window.adminLogin=async ()=>{
-    const userInput = document.getElementById('lUser').value.trim().toLowerCase();
-    const pass = document.getElementById('lPass').value.trim();
-    let email = document.getElementById('lUser').value.trim();
-    if(userInput==='admin' || userInput==='blackink') email='blackink@admin.com';
-    if(userInput==='mamthethwa') email='mamthethwa@admin.com';
-    try{
-      await getFB().signInWithEmailAndPassword(getAuth(), email, pass);
-      showAdmin();
-      toast("✅ Logged in as "+email);
-    }catch(e){ document.getElementById('lError').innerText = e.message; alert("Login failed: "+e.message); }
+    const userInput=document.getElementById('lUser').value.trim().toLowerCase(); const pass=document.getElementById('lPass').value.trim(); let email=document.getElementById('lUser').value.trim();
+    if(userInput==='admin'||userInput==='blackink') email='blackink@admin.com'; if(userInput==='mamthethwa') email='mamthethwa@admin.com';
+    try{ await getFB().signInWithEmailAndPassword(getAuth(),email,pass); showAdmin(); toast("✅ Logged in as "+email); }catch(e){ document.getElementById('lError').innerText=e.message; alert("Login failed: "+e.message); }
   }
   window.adminLogout=async ()=>{ await getFB().signOut(getAuth()); localStorage.removeItem('BI_ADMIN'); location.reload(); }
   window.switchTab=t=>{document.querySelectorAll('.admin-card').forEach(c=>c.classList.add('hidden'));document.getElementById('tab-'+t).classList.remove('hidden');document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');if(t=='products')renderAdminP();if(t=='orders')renderAdminO()}
   function showAdmin(){document.getElementById('loginBox').classList.add('hidden');document.getElementById('adminPanel').classList.remove('hidden');renderAdminP();renderAdminO()}
   window.addProduct=async ()=>{
     const name=document.getElementById('aName').value,price=parseInt(document.getElementById('aPrice').value),cat=document.getElementById('aCat').value,sizesStr=document.getElementById('aSizes').value;
-    const imgs=tempImgs.filter(x=>x); 
-    if(!name||!price||imgs.length==0){alert("⚠️ Need Name, Price, at least 1 pic");return}
-    if(imgs.length>4){ alert("⚠️ Only 4 pics allowed to stay under Firebase 1MB limit!"); return; }
+    const imgs=tempImgs.filter(x=>x); if(!name||!price||imgs.length==0){alert("⚠️ Need Name, Price, at least 1 pic");return} if(imgs.length>4){alert("⚠️ Only 4 pics!");return}
     let sizes={}; sizesStr.split(',').forEach(p=>{let [k,v]=p.split(':');if(k)sizes[k.trim().toUpperCase()]=parseInt(v)||0});
-    const newProduct={name,price,cat,images:imgs,sizes,likes:0,ratings:[], createdAt:Date.now()};
-    const docSize = JSON.stringify(newProduct).length;
-    const docKB = Math.round(docSize/1024);
-    if(docSize > MAX_DOC_BYTES){
-      alert(`❌ STILL TOO BIG, Try uploading 3 or 2 pictures. If akusebenzi nalokho faka 1.`);
-      return;
-    }
-    try{
-      const { collection, addDoc } = getFB();
-      await addDoc(collection(getDB(), "blackink_products"), newProduct);
-      toast(`✅ Published! ${docKB}KB - DANKO!!`);
-      alert(`✅ Published! Size: ${docKB}KB / 900KB limit — DANKO!!`);
-      tempImgs=["","","",""];
-      document.querySelectorAll('.prev').forEach(i=>{i.style.display='none';i.src=''}); 
-      document.querySelectorAll('.upload-box').forEach(b=>b.classList.remove('has'));
-      document.getElementById('aName').value=""; document.getElementById('aPrice').value=""; document.getElementById('aSizes').value="";
-      const info=document.getElementById('sizeInfo'); if(info) info.innerText=`Total: 0KB / 900KB limit (0/4 pics)`;
-    }catch(e){ alert("Firebase error: "+e.message+" — Did you login? If size error, use fewer pics."); }
+    const newProduct={name,price,cat,images:imgs,sizes,likes:0,ratings:[],createdAt:Date.now()};
+    const docSize=JSON.stringify(newProduct).length; const docKB=Math.round(docSize/1024);
+    if(docSize>MAX_DOC_BYTES){alert("❌ STILL TOO BIG, Try 3 or 2 pics");return;}
+    try{ const { collection, addDoc } = getFB(); await addDoc(collection(getDB(),"blackink_products"),newProduct); toast(`✅ Published! ${docKB}KB`); alert(`✅ Published! ${docKB}KB / 900KB - DANKO!!`); tempImgs=["","","",""]; document.querySelectorAll('.prev').forEach(i=>{i.style.display='none';i.src=''}); document.querySelectorAll('.upload-box').forEach(b=>b.classList.remove('has')); document.getElementById('aName').value=""; document.getElementById('aPrice').value=""; document.getElementById('aSizes').value=""; const info=document.getElementById('sizeInfo'); if(info) info.innerText=`Total: 0KB / 900KB limit (0/4 pics)`; }catch(e){ alert("Firebase error: "+e.message); }
   }
   function renderAdminP(){const box=document.getElementById('adminProducts');if(!box)return;box.innerHTML="";products.forEach(p=>{const kb=Math.round(JSON.stringify(p).length/1024);box.innerHTML+=`<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #eee"><img src="${p.images[0]}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1.5px solid #111"><span style="flex:1"><b>${p.name}</b> (${p.cat})<br><small>R${p.price} • ${Object.entries(p.sizes||{}).map(([k,v])=>k+':'+v).join(', ')} • ${kb}KB</small></span><button onclick="deleteProd('${p.id}')" style="color:red;border:none;background:none;font-weight:800">🗑️</button></div>`})}
-  window.deleteProd=async id=>{ if(!confirm("Delete this product?")) return; try{ const { doc, deleteDoc } = getFB(); await deleteDoc(doc(getDB(), "blackink_products", id)); toast("Deleted ✅"); alert("Deleted ✅"); }catch(e){ alert(e.message); } }
+  window.deleteProd=async id=>{ if(!confirm("Delete this product?")) return; try{ const { doc, deleteDoc } = getFB(); await deleteDoc(doc(getDB(),"blackink_products",id)); toast("Deleted ✅"); }catch(e){ alert(e.message); } }
+
+  // ===== ADMIN TABLE - STATUS + DAYS LEFT EDITABLE =====
   async function renderAdminO(){
     const tbody=document.getElementById('adminOrders');if(!tbody)return;
     try{
       const { collection, getDocs } = getFB();
-      const snap = await getDocs(collection(getDB(), "blackink_orders"));
-      const orders = snap.docs.map(d=>({id:d.id, ...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
-      tbody.innerHTML="";orders.forEach(o=>{tbody.innerHTML+=`<tr><td><b>${o.code}</b></td><td>${o.name}</td><td>${o.phone}</td><td>${o.address}</td><td>${o.items.map(i=>`${i.name} ${i.size} x${i.qty}`).join('<br>')}</td><td>R${o.total}</td><td><select onchange="changeStatus('${o.id}',this.value)"><option ${o.status=='Pending'?'selected':''}>Pending</option><option ${o.status=='Confirmed'?'selected':''}>Confirmed</option><option ${o.status=='Packed'?'selected':''}>Packed</option><option ${o.status=='Shipped'?'selected':''}>Shipped</option><option ${o.status=='Delivered'?'selected':''}>Delivered</option></select></td><td>${o.est}</td><td>${o.date}</td><td><button onclick="deleteOrder('${o.id}')" style="color:red;border:none;background:none">✕</button></td></tr>`})
+      const snap=await getDocs(collection(getDB(),"blackink_orders"));
+      const orders=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
+      tbody.innerHTML=""; 
+      orders.forEach(o=>{
+        tbody.innerHTML+=`<tr>
+          <td><b>${o.code}</b></td>
+          <td>${o.name}<br><small>${o.phone}</small></td>
+          <td>${o.address}</td>
+          <td>${o.items.map(i=>`${i.name} ${i.size} x${i.qty}`).join('<br>')}<br><b>R${o.total}</b></td>
+          <td>R${o.total}</td>
+          <td><select onchange="changeStatus('${o.id}',this.value)" style="border:1.5px solid #000;border-radius:6px;padding:4px;font-weight:800"><option ${o.status=='Pending'?'selected':''}>Pending</option><option ${o.status=='Confirmed'?'selected':''}>Confirmed</option><option ${o.status=='Packed'?'selected':''}>Packed</option><option ${o.status=='Shipped'?'selected':''}>Shipped</option><option ${o.status=='Delivered'?'selected':''}>Delivered</option></select></td>
+          <td><input value="${o.est}" onchange="changeEst('${o.id}',this.value)" style="width:90px;border:1.5px solid #000;border-radius:6px;padding:5px;font-weight:800;text-align:center" placeholder="2-3 days"></td>
+          <td><small>${o.date}</small></td>
+          <td><button onclick="deleteOrder('${o.id}')" style="color:red;border:none;background:none;font-weight:900">✕</button></td>
+        </tr>`;
+      })
     }catch(e){ tbody.innerHTML="<tr><td>Login first to see orders</td></tr>"; }
   }
-  window.changeStatus=async (docId,val)=>{const { doc, updateDoc } = getFB(); await updateDoc(doc(getDB(), "blackink_orders", docId), {status:val}); renderAdminO(); alert("Status updated to "+val);}
-  window.deleteOrder=async docId=>{ if(!confirm("Delete order?")) return; const { doc, deleteDoc } = getFB(); await deleteDoc(doc(getDB(), "blackink_orders", docId)); renderAdminO(); toast("Order deleted");}
-  getFB().onAuthStateChanged(getAuth(), (user)=>{
-    if(user){ showAdmin(); }
-  });
+  window.changeStatus=async (docId,val)=>{ const { doc, updateDoc } = getFB(); await updateDoc(doc(getDB(),"blackink_orders",docId),{status:val}); toast("Status: "+val); renderAdminO(); }
+  window.changeEst=async (docId,val)=>{ const { doc, updateDoc } = getFB(); await updateDoc(doc(getDB(),"blackink_orders",docId),{est:val}); toast("Days left: "+val); renderAdminO(); }
+  window.deleteOrder=async docId=>{ if(!confirm("Delete order?")) return; const { doc, deleteDoc } = getFB(); await deleteDoc(doc(getDB(),"blackink_orders",docId)); renderAdminO(); toast("Order deleted");}
+  getFB().onAuthStateChanged(getAuth(),(user)=>{ if(user){ showAdmin(); } });
 }
