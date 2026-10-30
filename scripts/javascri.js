@@ -1,8 +1,12 @@
 const WHATSAPP="27697479557";
-let tempImgs=["","","","",""];
+let tempImgs=["","","",""]; //4 PICS ONLY
 let products=[], cart=[], current=null, activeCat='all';
 
-// FIREBASE HELPERS
+// FIXED CONFIG
+const MAX_W = 480;
+const QUALITY = 0.45;
+const MAX_DOC_BYTES = 900000;
+
 const getDB = () => window.db;
 const getFB = () => window.fbMethods;
 const getAuth = () => window.auth;
@@ -10,7 +14,6 @@ const getAuth = () => window.auth;
 function avg(arr){if(!arr||!arr.length)return 4.9;return (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1)}
 function toast(m){let d=document.createElement('div');d.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:999px;font-size:11px;font-weight:800;z-index:999;';d.innerText=m;document.body.appendChild(d);setTimeout(()=>d.remove(),2500)}
 
-// LOAD PRODUCTS FROM FIREBASE
 async function loadProducts(){
   if(!getDB()){ setTimeout(loadProducts,500); return; }
   const { collection, onSnapshot } = getFB();
@@ -95,10 +98,10 @@ if(document.getElementById('products')){
           await updateDoc(doc(getDB(), "blackink_products", prod.id), {sizes:newSizes});
         }
       }
-    }catch(err){ console.error(err); }
-    const msg=`🔥 BLACK INK ORDER ${code} 🔥\n${list}\nTotal R${total}\nName: ${name}\nPhone: ${phone}\nDelivery: ${del}\nAddr: ${addr}\nTrack: ${code}`;
+    }catch(err){ console.error(err); alert("Order save error: "+err.message); }
+    const msg=`🔥 BLACK INK ORDER ${code} 🔥\n${list}\nTotal: R${total}\nName: ${name}\nPhone: ${phone}\nDelivery: ${del}\nAddr: ${addr}\nTrack: ${code}`;
     window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`,'_blank');
-    cart=[];render();closeModal('cartModal');e.target.reset(); alert("BI Code: "+code);
+    cart=[];render();closeModal('cartModal');e.target.reset(); alert("BI Code: "+code+" — DANKO!!");
   }
   window.trackOrder=async ()=>{
     const code=document.getElementById('trackInput').value.trim().toUpperCase();
@@ -112,22 +115,47 @@ if(document.getElementById('products')){
   }
 }
 
-// ADMIN - SECURE
 if(document.getElementById('loginBox')){
   window.handleImg=(input,idx)=>{
     const file=input.files[0]; if(!file) return;
+    if(file.size > 10*1024*1024){ alert("Image too big! Please select smaller image or crop it first."); input.value=""; return; }
     const reader=new FileReader();
     reader.onload=e=>{
       const img=new Image();
       img.onload=()=>{
-        const canvas=document.createElement('canvas'); const maxW=800; let w=img.width,h=img.height; if(w>maxW){h=h*(maxW/w);w=maxW} canvas.width=w; canvas.height=h; canvas.getContext('2d').drawImage(img,0,0,w,h);
-        tempImgs[idx]=canvas.toDataURL('image/jpeg',0.7);
-        document.getElementById('prev'+idx).src=tempImgs[idx]; document.getElementById('prev'+idx).style.display='block'; document.getElementById('up'+idx).parentElement.classList.add('has');
+        const canvas=document.createElement('canvas'); 
+        let w=img.width,h=img.height; 
+        if(w>MAX_W){h=h*(MAX_W/w);w=MAX_W}
+        if(h>700){w=w*(700/h);h=700}
+        canvas.width=w; canvas.height=h; 
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        tempImgs[idx]=canvas.toDataURL('image/jpeg',QUALITY);
+        document.getElementById('prev'+idx).src=tempImgs[idx]; 
+        document.getElementById('prev'+idx).style.display='block'; 
+        document.getElementById('up'+idx).parentElement.classList.add('has');
+        updateSizeInfo();
       }; img.src=e.target.result;
     }; reader.readAsDataURL(file);
   }
+
+  function updateSizeInfo(){
+    const totalBytes = tempImgs.join('').length;
+    const totalKB = Math.round(totalBytes * 0.75 / 1024);
+    let info = document.getElementById('sizeInfo');
+    if(!info){
+      info = document.createElement('div');
+      info.id = 'sizeInfo';
+      info.style.cssText = 'font-size:10px;font-weight:800;padding:8px;margin:8px 0;border-radius:8px;border:1.5px solid #000';
+      const grid = document.querySelector('.upload-grid');
+      if(grid) grid.after(info);
+    }
+    if(info){
+      info.innerText = `Total: ${totalKB}KB / 900KB limit (${tempImgs.filter(x=>x).length}/4 pics) - 480px @ 0.45 quality`;
+      info.style.background = totalKB > 900 ? '#ff4444' : totalKB > 700 ? '#ffcc00' : '#fff';
+      info.style.color = totalKB > 900 ? '#fff' : '#000';
+    }
+  }
   
-  // SECURE LOGIN
   window.adminLogin=async ()=>{
     const userInput = document.getElementById('lUser').value.trim().toLowerCase();
     const pass = document.getElementById('lPass').value.trim();
@@ -138,7 +166,7 @@ if(document.getElementById('loginBox')){
       await getFB().signInWithEmailAndPassword(getAuth(), email, pass);
       showAdmin();
       toast("✅ Logged in as "+email);
-    }catch(e){ document.getElementById('lError').innerText = e.message; }
+    }catch(e){ document.getElementById('lError').innerText = e.message; alert("Login failed: "+e.message); }
   }
   
   window.adminLogout=async ()=>{ await getFB().signOut(getAuth()); localStorage.removeItem('BI_ADMIN'); location.reload(); }
@@ -147,20 +175,34 @@ if(document.getElementById('loginBox')){
   
   window.addProduct=async ()=>{
     const name=document.getElementById('aName').value,price=parseInt(document.getElementById('aPrice').value),cat=document.getElementById('aCat').value,sizesStr=document.getElementById('aSizes').value;
-    const imgs=tempImgs.filter(x=>x); if(!name||!price||imgs.length==0){alert("Need Name, Price, at least 1 pic");return}
+    const imgs=tempImgs.filter(x=>x); 
+    if(!name||!price||imgs.length==0){alert("⚠️ Need Name, Price, at least 1 pic");return}
+    if(imgs.length>4){ alert("⚠️ Only 4 pics allowed to stay under Firebase 1MB limit!"); return; }
     let sizes={}; sizesStr.split(',').forEach(p=>{let [k,v]=p.split(':');if(k)sizes[k.trim().toUpperCase()]=parseInt(v)||0});
     const newProduct={name,price,cat,images:imgs,sizes,likes:0,ratings:[], createdAt:Date.now()};
+    
+    const docSize = JSON.stringify(newProduct).length;
+    const docKB = Math.round(docSize/1024);
+    if(docSize > MAX_DOC_BYTES){
+      alert(`❌ STILL TOO BIG, Try uploading 3 or 2 pictures. If akusebenzi nalokho faka 1.`);
+      return;
+    }
+    
     try{
       const { collection, addDoc } = getFB();
       await addDoc(collection(getDB(), "blackink_products"), newProduct);
-      toast('✅ Published to Firebase!');
-      tempImgs=["","","","",""]; document.querySelectorAll('.prev').forEach(i=>{i.style.display='none';i.src=''}); document.querySelectorAll('.upload-box').forEach(b=>b.classList.remove('has'));
+      toast(`✅ Published! ${docKB}KB - DANKO!!`);
+      alert(`✅ Published! Size: ${docKB}KB / 900KB limit — DANKO!!`);
+      tempImgs=["","","",""];
+      document.querySelectorAll('.prev').forEach(i=>{i.style.display='none';i.src=''}); 
+      document.querySelectorAll('.upload-box').forEach(b=>b.classList.remove('has'));
       document.getElementById('aName').value=""; document.getElementById('aPrice').value=""; document.getElementById('aSizes').value="";
-    }catch(e){ alert("Firebase error: "+e.message+" — Did you login?"); }
+      const info=document.getElementById('sizeInfo'); if(info) info.innerText=`Total: 0KB / 900KB limit (0/4 pics)`;
+    }catch(e){ alert("Firebase error: "+e.message+" — Did you login? If size error, use fewer pics."); }
   }
   
-  function renderAdminP(){const box=document.getElementById('adminProducts');if(!box)return;box.innerHTML="";products.forEach(p=>{box.innerHTML+=`<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #eee"><img src="${p.images[0]}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1.5px solid #111"><span style="flex:1"><b>${p.name}</b> (${p.cat})<br><small>R${p.price} • ${Object.entries(p.sizes||{}).map(([k,v])=>k+':'+v).join(', ')}</small></span><button onclick="deleteProd('${p.id}')" style="color:red;border:none;background:none;font-weight:800">🗑️</button></div>`})}
-  window.deleteProd=async id=>{ if(!confirm("Delete?")) return; try{ const { doc, deleteDoc } = getFB(); await deleteDoc(doc(getDB(), "blackink_products", id)); toast("Deleted ✅"); }catch(e){ alert(e.message); } }
+  function renderAdminP(){const box=document.getElementById('adminProducts');if(!box)return;box.innerHTML="";products.forEach(p=>{const kb=Math.round(JSON.stringify(p).length/1024);box.innerHTML+=`<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #eee"><img src="${p.images[0]}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1.5px solid #111"><span style="flex:1"><b>${p.name}</b> (${p.cat})<br><small>R${p.price} • ${Object.entries(p.sizes||{}).map(([k,v])=>k+':'+v).join(', ')} • ${kb}KB</small></span><button onclick="deleteProd('${p.id}')" style="color:red;border:none;background:none;font-weight:800">🗑️</button></div>`})}
+  window.deleteProd=async id=>{ if(!confirm("Delete this product?")) return; try{ const { doc, deleteDoc } = getFB(); await deleteDoc(doc(getDB(), "blackink_products", id)); toast("Deleted ✅"); alert("Deleted ✅"); }catch(e){ alert(e.message); } }
   
   async function renderAdminO(){
     const tbody=document.getElementById('adminOrders');if(!tbody)return;
@@ -171,10 +213,9 @@ if(document.getElementById('loginBox')){
       tbody.innerHTML="";orders.forEach(o=>{tbody.innerHTML+=`<tr><td><b>${o.code}</b></td><td>${o.name}</td><td>${o.phone}</td><td>${o.address}</td><td>${o.items.map(i=>`${i.name} ${i.size} x${i.qty}`).join('<br>')}</td><td>R${o.total}</td><td><select onchange="changeStatus('${o.id}',this.value)"><option ${o.status=='Pending'?'selected':''}>Pending</option><option ${o.status=='Confirmed'?'selected':''}>Confirmed</option><option ${o.status=='Packed'?'selected':''}>Packed</option><option ${o.status=='Shipped'?'selected':''}>Shipped</option><option ${o.status=='Delivered'?'selected':''}>Delivered</option></select></td><td>${o.est}</td><td>${o.date}</td><td><button onclick="deleteOrder('${o.id}')" style="color:red;border:none;background:none">✕</button></td></tr>`})
     }catch(e){ tbody.innerHTML="<tr><td>Login first to see orders</td></tr>"; }
   }
-  window.changeStatus=async (docId,val)=>{const { doc, updateDoc } = getFB(); await updateDoc(doc(getDB(), "blackink_orders", docId), {status:val}); renderAdminO();}
-  window.deleteOrder=async docId=>{ if(!confirm("Delete order?")) return; const { doc, deleteDoc } = getFB(); await deleteDoc(doc(getDB(), "blackink_orders", docId)); renderAdminO();}
+  window.changeStatus=async (docId,val)=>{const { doc, updateDoc } = getFB(); await updateDoc(doc(getDB(), "blackink_orders", docId), {status:val}); renderAdminO(); alert("Status updated to "+val);}
+  window.deleteOrder=async docId=>{ if(!confirm("Delete order?")) return; const { doc, deleteDoc } = getFB(); await deleteDoc(doc(getDB(), "blackink_orders", docId)); renderAdminO(); toast("Order deleted");}
 
-  // Auto login check
   getFB().onAuthStateChanged(getAuth(), (user)=>{
     if(user){ showAdmin(); }
   });
