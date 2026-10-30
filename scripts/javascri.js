@@ -62,17 +62,30 @@ if(document.getElementById('products')){
     const thumbs=document.getElementById('mThumbs'); thumbs.innerHTML="";
     current.images.forEach((img,i)=>{ if(img) thumbs.innerHTML+=`<img src="${img}" class="${i==0?'active':''}" onclick="setMain('${img}',this)">`; });
     const sel=document.getElementById('mSize'); sel.innerHTML="";
-    for(let s in current.sizes){ sel.innerHTML+=`<option value="${s}">Size ${s} - ${current.sizes[s]} left</option>`; }
+    for(let s in current.sizes){ sel.innerHTML+=`<option value="${s}">Size ${s} - ${current.sizes[s]} left ${current.sizes[s]==0?'(OUT)':''}</option>`; }
     document.getElementById('likeCount').innerText=current.likes||0;
     document.getElementById('mAvg').innerText=avg(current.ratings);
     document.getElementById('mRCount').innerText=`(${current.ratings?.length||0})`;
     document.getElementById('productModal').classList.remove('hidden');
   }
   window.setMain=(src,el)=>{document.getElementById('mImage').src=src;document.querySelectorAll('.thumbs img').forEach(i=>i.classList.remove('active'));el.classList.add('active')}
+  
+  //BUY BUTTON - CHECK STOCK
   window.addToCart=()=>{
-    const size=document.getElementById('mSize').value; const qty=parseInt(document.getElementById('mQty').value);
-    if(qty>current.sizes[size]){document.getElementById('mQtyError').innerText="Only "+current.sizes[size]+" left";return}
-    cart.push({id:current.id,name:current.name,size,qty,price:current.price}); closeModal('productModal'); render(); toast('Added 🛒'); openCart();
+    const size=document.getElementById('mSize').value; 
+    const qty=parseInt(document.getElementById('mQty').value);
+    if(!size){ alert("⚠️ Select size"); return; }
+    if(current.sizes[size] === 0){ alert(`❌ Size ${size} is OUT of stock!`); return; }
+    if(qty>current.sizes[size]){
+      document.getElementById('mQtyError').innerText="Only "+current.sizes[size]+" left";
+      alert(`❌ Only ${current.sizes[size]} left in Size ${size}. You tried ${qty}.`);
+      return;
+    }
+    cart.push({id:current.id,name:current.name,size,qty,price:current.price}); 
+    closeModal('productModal'); 
+    render(); 
+    toast(`Added 🛒 ${size} x${qty}`); 
+    openCart();
   }
   window.openCart=()=>{
     if(cart.length==0){toast('Bag empty');return}
@@ -81,28 +94,64 @@ if(document.getElementById('products')){
   }
   window.removeCart=i=>{cart.splice(i,1);render();if(cart.length==0)closeModal('cartModal');else openCart()}
   window.closeModal=id=>document.getElementById(id).classList.add('hidden');
+  
+  //WHEN BUY BUTTON TAPPED DECREASES INSTANTLY
   window.submitOrder=async e=>{
     e.preventDefault();
     const name=document.getElementById('custName').value, phone=document.getElementById('custPhone').value, del=document.getElementById('custCampus').value, addr=document.getElementById('custAddress').value;
-    const code="BI"+Math.floor(1000+Math.random()*9000); let list="",total=0;
+    if(cart.length===0){ alert("Bag empty"); return; }
+    const code="BI"+Math.floor(1000+Math.random()*9000); 
+    let list="",total=0;
     cart.forEach(c=>{list+=`• ${c.name} Size ${c.size} x${c.qty}=R${c.price*c.qty}\n`;total+=c.price*c.qty});
+
+    for(let c of cart){
+      const prod = products.find(p=>p.id==c.id);
+      if(!prod){ alert(`❌ Product ${c.name} not found`); return; }
+      if((prod.sizes[c.size]||0) < c.qty){
+        alert(`❌ Sorry! Size ${c.size} for ${prod.name} only has ${prod.sizes[c.size]||0} left. You tried to buy ${c.qty}.`);
+        return;
+      }
+    }
+
+    
+    for(let c of cart){
+      const prod = products.find(p=>p.id==c.id);
+      if(prod){
+        prod.sizes[c.size] -= c.qty;
+        if(prod.sizes[c.size] < 0) prod.sizes[c.size] = 0;
+      }
+    }
+    render();
+    renderAdminP();
+    toast(`⏳ Processing order ${code}... Siyabulela!`);
+
     const order={code,name,phone,delivery:del,address:addr,items:[...cart],total,status:"Pending",est:"2-3 days",date:new Date().toLocaleString(), createdAt: Date.now()};
     try{
-      const { collection, addDoc } = getFB();
+      const { collection, addDoc, doc, updateDoc } = getFB();
       await addDoc(collection(getDB(), "blackink_orders"), order);
       for(let c of cart){
         const prod = products.find(p=>p.id==c.id);
         if(prod){
-          const { doc, updateDoc } = getFB();
-          const newSizes = {...prod.sizes}; newSizes[c.size]-=c.qty;
-          await updateDoc(doc(getDB(), "blackink_products", prod.id), {sizes:newSizes});
+          await updateDoc(doc(getDB(), "blackink_products", prod.id), {sizes: prod.sizes});
         }
       }
-    }catch(err){ console.error(err); alert("Order save error: "+err.message); }
+    }catch(err){ 
+      console.error(err); 
+      alert("Order save error: "+err.message+" — Rolling back.");
+      for(let c of cart){
+        const prod = products.find(p=>p.id==c.id);
+        if(prod) prod.sizes[c.size] += c.qty;
+      }
+      render(); renderAdminP();
+      return;
+    }
+
     const msg=`🔥 BLACK INK ORDER ${code} 🔥\n${list}\nTotal: R${total}\nName: ${name}\nPhone: ${phone}\nDelivery: ${del}\nAddr: ${addr}\nTrack: ${code}`;
     window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`,'_blank');
-    cart=[];render();closeModal('cartModal');e.target.reset(); alert("BI Code: "+code+" — DANKO!!");
+    cart=[];render();closeModal('cartModal');e.target.reset(); 
+    alert(`✅ BI Code: ${code}\n\nStock updated!\n${list}\n— DANKO!!`);
   }
+
   window.trackOrder=async ()=>{
     const code=document.getElementById('trackInput').value.trim().toUpperCase();
     if(!code){toast('Enter BI code');return}
