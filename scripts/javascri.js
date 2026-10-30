@@ -1,19 +1,14 @@
 const WHATSAPP="27697479557";
 let tempImgs=["","","",""]; //4 PICS ONLY
 let products=[], cart=[], current=null, activeCat='all';
-
-// FIXED CONFIG
 const MAX_W = 480;
 const QUALITY = 0.45;
 const MAX_DOC_BYTES = 900000;
-
 const getDB = () => window.db;
 const getFB = () => window.fbMethods;
 const getAuth = () => window.auth;
-
 function avg(arr){if(!arr||!arr.length)return 4.9;return (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1)}
 function toast(m){let d=document.createElement('div');d.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:999px;font-size:11px;font-weight:800;z-index:999;';d.innerText=m;document.body.appendChild(d);setTimeout(()=>d.remove(),2500)}
-
 async function loadProducts(){
   if(!getDB()){ setTimeout(loadProducts,500); return; }
   const { collection, onSnapshot } = getFB();
@@ -25,13 +20,42 @@ async function loadProducts(){
   });
 }
 loadProducts();
-
+// ===== WELCOME MESSAGE - INDEX LOAD =====
+function showWelcome(){
+  const modal = document.getElementById('welcomeModal');
+  const box = document.getElementById('welcomeBox');
+  if(!modal) return;
+  modal.style.opacity = '1';
+  modal.style.pointerEvents = 'all';
+  if(box) box.style.transform = 'scale(1)';
+}
+function closeWelcome(){
+  const modal = document.getElementById('welcomeModal');
+  const box = document.getElementById('welcomeBox');
+  if(box) box.style.transform = 'scale(.9)';
+  if(modal) modal.style.opacity = '0';
+  setTimeout(()=>{ if(modal) modal.style.pointerEvents='none'; }, 400);
+  localStorage.setItem('BI_WELCOMED', Date.now());
+}
+window.showWelcome = showWelcome;
+window.closeWelcome = closeWelcome;
+window.addEventListener('load', ()=>{
+  if(!document.getElementById('welcomeModal')) return;
+  const last = localStorage.getItem('BI_WELCOMED');
+  const now = Date.now();
+  const oneDay = 24*60*60*1000;
+  if(!last || (now - parseInt(last)) > oneDay){
+    setTimeout(showWelcome, 200);
+  }
+  document.getElementById('welcomeModal')?.addEventListener('click', (e)=>{
+    if(e.target.id === 'welcomeModal') closeWelcome();
+  });
+});
 const hoursBox=document.getElementById('hoursBox');
 if(hoursBox){
   const days=[['Thursday','09:00 - 18:00'],['Friday','09:00 - 18:00'],['Saturday','09:00 - 18:00'],['Sunday','Closed'],['Monday','09:00 - 18:00'],['Tuesday','09:00 - 18:00']];
   hoursBox.innerHTML=days.map(d=>`<div><span>${d[0]}</span><span>${d[1]}</span></div>`).join('');
 }
-
 if(document.getElementById('products')){
   function render(){
     const box=document.getElementById('products'); if(!box) return; box.innerHTML="";
@@ -69,8 +93,6 @@ if(document.getElementById('products')){
     document.getElementById('productModal').classList.remove('hidden');
   }
   window.setMain=(src,el)=>{document.getElementById('mImage').src=src;document.querySelectorAll('.thumbs img').forEach(i=>i.classList.remove('active'));el.classList.add('active')}
-  
-  //BUY BUTTON - CHECK STOCK
   window.addToCart=()=>{
     const size=document.getElementById('mSize').value; 
     const qty=parseInt(document.getElementById('mQty').value);
@@ -94,8 +116,6 @@ if(document.getElementById('products')){
   }
   window.removeCart=i=>{cart.splice(i,1);render();if(cart.length==0)closeModal('cartModal');else openCart()}
   window.closeModal=id=>document.getElementById(id).classList.add('hidden');
-  
-  //WHEN BUY BUTTON TAPPED DECREASES INSTANTLY
   window.submitOrder=async e=>{
     e.preventDefault();
     const name=document.getElementById('custName').value, phone=document.getElementById('custPhone').value, del=document.getElementById('custCampus').value, addr=document.getElementById('custAddress').value;
@@ -103,7 +123,6 @@ if(document.getElementById('products')){
     const code="BI"+Math.floor(1000+Math.random()*9000); 
     let list="",total=0;
     cart.forEach(c=>{list+=`• ${c.name} Size ${c.size} x${c.qty}=R${c.price*c.qty}\n`;total+=c.price*c.qty});
-
     for(let c of cart){
       const prod = products.find(p=>p.id==c.id);
       if(!prod){ alert(`❌ Product ${c.name} not found`); return; }
@@ -112,8 +131,6 @@ if(document.getElementById('products')){
         return;
       }
     }
-
-    
     for(let c of cart){
       const prod = products.find(p=>p.id==c.id);
       if(prod){
@@ -124,7 +141,6 @@ if(document.getElementById('products')){
     render();
     renderAdminP();
     toast(`⏳ Processing order ${code}... Siyabulela!`);
-
     const order={code,name,phone,delivery:del,address:addr,items:[...cart],total,status:"Pending",est:"2-3 days",date:new Date().toLocaleString(), createdAt: Date.now()};
     try{
       const { collection, addDoc, doc, updateDoc } = getFB();
@@ -145,13 +161,11 @@ if(document.getElementById('products')){
       render(); renderAdminP();
       return;
     }
-
     const msg=`🔥 BLACK INK ORDER ${code} 🔥\n${list}\nTotal: R${total}\nName: ${name}\nPhone: ${phone}\nDelivery: ${del}\nAddr: ${addr}\nTrack: ${code}`;
     window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`,'_blank');
     cart=[];render();closeModal('cartModal');e.target.reset(); 
     alert(`✅ BI Code: ${code}\n\nStock updated!\n${list}\n— DANKO!!`);
   }
-
   window.trackOrder=async ()=>{
     const code=document.getElementById('trackInput').value.trim().toUpperCase();
     if(!code){toast('Enter BI code');return}
@@ -163,7 +177,6 @@ if(document.getElementById('products')){
     box.innerHTML=`<div style="background:#fff;border:2px solid #111;padding:12px;border-radius:12px;margin-top:10px"><b>${order.code}</b> - ${order.status} • Est ${order.est}<br>Total R${order.total}<br><small>${order.date}</small></div>`;
   }
 }
-
 if(document.getElementById('loginBox')){
   window.handleImg=(input,idx)=>{
     const file=input.files[0]; if(!file) return;
@@ -186,7 +199,6 @@ if(document.getElementById('loginBox')){
       }; img.src=e.target.result;
     }; reader.readAsDataURL(file);
   }
-
   function updateSizeInfo(){
     const totalBytes = tempImgs.join('').length;
     const totalKB = Math.round(totalBytes * 0.75 / 1024);
@@ -204,7 +216,6 @@ if(document.getElementById('loginBox')){
       info.style.color = totalKB > 900 ? '#fff' : '#000';
     }
   }
-  
   window.adminLogin=async ()=>{
     const userInput = document.getElementById('lUser').value.trim().toLowerCase();
     const pass = document.getElementById('lPass').value.trim();
@@ -217,11 +228,9 @@ if(document.getElementById('loginBox')){
       toast("✅ Logged in as "+email);
     }catch(e){ document.getElementById('lError').innerText = e.message; alert("Login failed: "+e.message); }
   }
-  
   window.adminLogout=async ()=>{ await getFB().signOut(getAuth()); localStorage.removeItem('BI_ADMIN'); location.reload(); }
   window.switchTab=t=>{document.querySelectorAll('.admin-card').forEach(c=>c.classList.add('hidden'));document.getElementById('tab-'+t).classList.remove('hidden');document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');if(t=='products')renderAdminP();if(t=='orders')renderAdminO()}
   function showAdmin(){document.getElementById('loginBox').classList.add('hidden');document.getElementById('adminPanel').classList.remove('hidden');renderAdminP();renderAdminO()}
-  
   window.addProduct=async ()=>{
     const name=document.getElementById('aName').value,price=parseInt(document.getElementById('aPrice').value),cat=document.getElementById('aCat').value,sizesStr=document.getElementById('aSizes').value;
     const imgs=tempImgs.filter(x=>x); 
@@ -229,14 +238,12 @@ if(document.getElementById('loginBox')){
     if(imgs.length>4){ alert("⚠️ Only 4 pics allowed to stay under Firebase 1MB limit!"); return; }
     let sizes={}; sizesStr.split(',').forEach(p=>{let [k,v]=p.split(':');if(k)sizes[k.trim().toUpperCase()]=parseInt(v)||0});
     const newProduct={name,price,cat,images:imgs,sizes,likes:0,ratings:[], createdAt:Date.now()};
-    
     const docSize = JSON.stringify(newProduct).length;
     const docKB = Math.round(docSize/1024);
     if(docSize > MAX_DOC_BYTES){
       alert(`❌ STILL TOO BIG, Try uploading 3 or 2 pictures. If akusebenzi nalokho faka 1.`);
       return;
     }
-    
     try{
       const { collection, addDoc } = getFB();
       await addDoc(collection(getDB(), "blackink_products"), newProduct);
@@ -249,10 +256,8 @@ if(document.getElementById('loginBox')){
       const info=document.getElementById('sizeInfo'); if(info) info.innerText=`Total: 0KB / 900KB limit (0/4 pics)`;
     }catch(e){ alert("Firebase error: "+e.message+" — Did you login? If size error, use fewer pics."); }
   }
-  
   function renderAdminP(){const box=document.getElementById('adminProducts');if(!box)return;box.innerHTML="";products.forEach(p=>{const kb=Math.round(JSON.stringify(p).length/1024);box.innerHTML+=`<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #eee"><img src="${p.images[0]}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1.5px solid #111"><span style="flex:1"><b>${p.name}</b> (${p.cat})<br><small>R${p.price} • ${Object.entries(p.sizes||{}).map(([k,v])=>k+':'+v).join(', ')} • ${kb}KB</small></span><button onclick="deleteProd('${p.id}')" style="color:red;border:none;background:none;font-weight:800">🗑️</button></div>`})}
   window.deleteProd=async id=>{ if(!confirm("Delete this product?")) return; try{ const { doc, deleteDoc } = getFB(); await deleteDoc(doc(getDB(), "blackink_products", id)); toast("Deleted ✅"); alert("Deleted ✅"); }catch(e){ alert(e.message); } }
-  
   async function renderAdminO(){
     const tbody=document.getElementById('adminOrders');if(!tbody)return;
     try{
@@ -264,7 +269,6 @@ if(document.getElementById('loginBox')){
   }
   window.changeStatus=async (docId,val)=>{const { doc, updateDoc } = getFB(); await updateDoc(doc(getDB(), "blackink_orders", docId), {status:val}); renderAdminO(); alert("Status updated to "+val);}
   window.deleteOrder=async docId=>{ if(!confirm("Delete order?")) return; const { doc, deleteDoc } = getFB(); await deleteDoc(doc(getDB(), "blackink_orders", docId)); renderAdminO(); toast("Order deleted");}
-
   getFB().onAuthStateChanged(getAuth(), (user)=>{
     if(user){ showAdmin(); }
   });
