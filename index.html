@@ -35,7 +35,7 @@ const auth = getAuth(app);
 window.db = db;
 window.auth = auth;
 window.fbMethods = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, signInWithEmailAndPassword, signOut, onAuthStateChanged };
-console.log("✅ SECURE Black Ink + Mamthethwa linked to mamthethwa-db with Admin Auth");
+console.log("✅ SECURE Black Ink.");
 </script>
 </head>
 <body>
@@ -239,10 +239,10 @@ function handleF2(){
 <div id="welcomeModal" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:.4s">
   <div style="background:#fff;border:3px solid #000;border-radius:20px;padding:24px 18px;max-width:360px;width:100%;text-align:center;box-shadow:8px 8px 0 #000;transform:scale(.9);transition:.4s" id="welcomeBox">
     <div style="font-size:40px">👋</div>
-    <h2 style="font-family:'Anton',sans-serif;font-size:28px;margin:8px 0;letter-spacing:1px">WELCOME TO<br><span style="background:#000;color:#fff;padding:2px 10px;border-radius:8px">BLACK INK</span></h2>
-    <p style="font-size:13px;font-weight:600;margin:10px 0;line-height:1.5">🔥 Only The Chosen Know 🔥<br>Premium Streetwear • Skull • Logo • Premium</p>
-    <div style="background:#ffcc00;border:1.5px solid #000;border-radius:10px;padding:8px 10px;font-size:11px;font-weight:800;margin:12px 0">✨ NEW: 4 Pics Fixed • Instant Stock Update • Track Your BI Code</div>
-    <p style="font-size:11px;opacity:.6">📍 South Africa • WhatsApp Orders • 09:00-18:00</p>
+    <h2 style="font-family:'Anton',sans-serif;font-size:28px;margin:8px 0;letter-spacing:1px">Siyakwamkela, WELCOME TO<br><span style="background:#000;color:#fff;padding:2px 10px;border-radius:8px">BLACK INK</span></h2>
+    <p style="font-size:13px;font-weight:600;margin:10px 0;line-height:1.5">🔥 We Keep It Real 🔥<br>Premium Streetwear • Skull • Logo • Premium</p>
+    <div style="background:#ffcc00;border:1.5px solid #000;border-radius:10px;padding:8px 10px;font-size:11px;font-weight:800;margin:12px 0">✨ Bheka Ukuba Sinantoni • Order Now • Track Your Order</div>
+    <p style="font-size:11px;opacity:.6">📍 South Africa • Durban • Central</p>
     <button onclick="closeWelcome()" style="margin-top:14px;background:#000;color:#fff;border:2px solid #000;padding:12px 24px;border-radius:999px;font-weight:900;font-size:13px;cursor:pointer;box-shadow:3px 3px 0 #000;width:100%">SHOP NOW 🛒</button>
     <p style="font-size:10px;margin-top:8px;opacity:.5;cursor:pointer" onclick="closeWelcome()">Skip → Continue shopping</p>
   </div>
@@ -275,7 +275,7 @@ window.addEventListener('load', ()=>{
   const oneDay = 24*60*60*1000;
   // Show if never welcomed or last welcome > 1 day ago
   if(!last || (now - parseInt(last)) > oneDay){
-    setTimeout(showWelcome, 800); // 0.8s after page loads
+    setTimeout(showWelcome, 200); // 0.2s after page loads
   }
 });
 
