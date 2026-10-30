@@ -43,7 +43,7 @@ window.addEventListener('load', ()=>{
   if(!document.getElementById('welcomeModal')) return;
   const last = localStorage.getItem('BI_WELCOMED');
   const now = Date.now();
-  const oneDay = 0*24*60*60*1000;
+  const oneDay = 24*60*60*1000;
   if(!last || (now - parseInt(last)) > oneDay){
     setTimeout(showWelcome, 200);
   }
@@ -116,56 +116,93 @@ if(document.getElementById('products')){
   }
   window.removeCart=i=>{cart.splice(i,1);render();if(cart.length==0)closeModal('cartModal');else openCart()}
   window.closeModal=id=>document.getElementById(id).classList.add('hidden');
-  window.submitOrder=async e=>{
+  
+  // ✅ FINAL BUY BUTTON - SAVES TO FIREBASE EVEN WITHOUT WHATSAPP
+  window.submitOrder = async e => {
     e.preventDefault();
-    const name=document.getElementById('custName').value, phone=document.getElementById('custPhone').value, del=document.getElementById('custCampus').value, addr=document.getElementById('custAddress').value;
-    if(cart.length===0){ alert("Bag empty"); return; }
-    const code="BI"+Math.floor(1000+Math.random()*9000); 
-    let list="",total=0;
-    cart.forEach(c=>{list+=`• ${c.name} Size ${c.size} x${c.qty}=R${c.price*c.qty}\n`;total+=c.price*c.qty});
+    const btn = e.target.querySelector('button');
+    const oldText = btn ? btn.innerText : '';
+    if(btn){ btn.innerText = '⏳ Saving...'; btn.disabled = true; }
+
+    const name = document.getElementById('custName').value.trim();
+    const phone = document.getElementById('custPhone').value.trim();
+    const del = document.getElementById('custCampus').value;
+    const addr = document.getElementById('custAddress').value;
+    
+    if(cart.length === 0){ 
+      alert("Bag empty"); 
+      if(btn){ btn.innerText = oldText; btn.disabled = false; }
+      return; 
+    }
+    
+    // 1. CHECK STOCK
     for(let c of cart){
       const prod = products.find(p=>p.id==c.id);
-      if(!prod){ alert(`❌ Product ${c.name} not found`); return; }
+      if(!prod){ alert(`❌ Product ${c.name} not found`); if(btn){ btn.innerText = oldText; btn.disabled = false; } return; }
       if((prod.sizes[c.size]||0) < c.qty){
-        alert(`❌ Sorry! Size ${c.size} for ${prod.name} only has ${prod.sizes[c.size]||0} left. You tried to buy ${c.qty}.`);
+        alert(`❌ Sorry! Size ${c.size} for ${prod.name} only has ${prod.sizes[c.size]||0} left. You tried ${c.qty}.`);
+        if(btn){ btn.innerText = oldText; btn.disabled = false; }
         return;
       }
     }
-    for(let c of cart){
-      const prod = products.find(p=>p.id==c.id);
-      if(prod){
-        prod.sizes[c.size] -= c.qty;
-        if(prod.sizes[c.size] < 0) prod.sizes[c.size] = 0;
-      }
-    }
-    render();
-    renderAdminP();
-    toast(`⏳ Processing order ${code}... Siyabulela!`);
-    const order={code,name,phone,delivery:del,address:addr,items:[...cart],total,status:"Pending",est:"2-3 days",date:new Date().toLocaleString(), createdAt: Date.now()};
+
+    // 2. CREATE ORDER
+    const code = "BI" + Math.floor(1000 + Math.random()*9000);
+    let list = "", total = 0;
+    cart.forEach(c=>{ list+=`• ${c.name} Size ${c.size} x${c.qty}=R${c.price*c.qty}\n`; total+=c.price*c.qty; });
+    const order = { code, name, phone, delivery: del, address: addr, items: [...cart], total, status: "Pending", est: "2-3 days", date: new Date().toLocaleString(), createdAt: Date.now() };
+
+    // 3. SAVE TO FIREBASE FIRST - MUST SUCCEED EVEN WITHOUT WHATSAPP
     try{
       const { collection, addDoc, doc, updateDoc } = getFB();
       await addDoc(collection(getDB(), "blackink_orders"), order);
+      console.log("✅ Order saved to admin table:", code);
       for(let c of cart){
         const prod = products.find(p=>p.id==c.id);
         if(prod){
+          prod.sizes[c.size] -= c.qty;
+          if(prod.sizes[c.size] < 0) prod.sizes[c.size] = 0;
           await updateDoc(doc(getDB(), "blackink_products", prod.id), {sizes: prod.sizes});
         }
       }
-    }catch(err){ 
-      console.error(err); 
-      alert("Order save error: "+err.message+" — Rolling back.");
-      for(let c of cart){
-        const prod = products.find(p=>p.id==c.id);
-        if(prod) prod.sizes[c.size] += c.qty;
-      }
-      render(); renderAdminP();
+    }catch(err){
+      console.error("Firebase save failed:", err);
+      alert(`❌ Order NOT saved! Error: ${err.message}\n\nGo to Firebase Console > Firestore > Rules and set:\nallow create: if true; for blackink_orders\n\nThen try again.`);
+      if(btn){ btn.innerText = oldText; btn.disabled = false; }
       return;
     }
-    const msg=`🔥 BLACK INK ORDER ${code} 🔥\n${list}\nTotal: R${total}\nName: ${name}\nPhone: ${phone}\nDelivery: ${del}\nAddr: ${addr}\nTrack: ${code}`;
-    window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`,'_blank');
-    cart=[];render();closeModal('cartModal');e.target.reset(); 
-    alert(`✅ BI Code: ${code}\n\nStock updated!\n${list}\n— DANKO!!`);
+
+    // 4. UPDATE UI - 2left -> 1left -> OUT
+    render();
+    if(typeof renderAdminP === 'function') renderAdminP();
+    if(typeof renderAdminO === 'function') renderAdminO();
+    toast(`✅ Order ${code} saved to admin!`);
+
+    // 5. CLEAR CART + GIVE BI CODE - Even without WhatsApp, customer has code and order is in admin
+    const cartCopy = [...cart];
+    cart = [];
+    render();
+    closeModal('cartModal');
+    e.target.reset();
+    if(btn){ btn.innerText = oldText; btn.disabled = false; }
+
+    alert(`✅ ORDER SAVED! BI Code: ${code}\n\n${list}\nTotal R${total}\n\nYour Is Saved.`);
+
+    // 6. TRY WHATSAPP - OPTIONAL
+    const msg = `🔥 BLACK INK ORDER ${code} 🔥\n${list}\nTotal: R${total}\nName: ${name}\nPhone: ${phone}\nDelivery: ${del}\nAddr: ${addr}\nTrack: ${code}`;
+    const waUrl = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
+    try{
+      const win = window.open(waUrl, '_blank');
+      if(!win){
+        if(confirm(`WhatsApp popup blocked.\n\nYour order ${code} is ALREADY SAVED in admin!\n\nClick OK to open WhatsApp manually, or Cancel to just keep your BI code.`)){
+          location.href = waUrl;
+        }
+      }
+    }catch{
+      console.log("WhatsApp open failed, but order already saved:", code);
+    }
   }
+
   window.trackOrder=async ()=>{
     const code=document.getElementById('trackInput').value.trim().toUpperCase();
     if(!code){toast('Enter BI code');return}
