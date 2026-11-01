@@ -268,7 +268,8 @@ if(document.getElementById('loginBox')){
       orders.forEach(o=>{
         tbody.innerHTML+=`<tr>
           <td><b>${o.code}</b></td>
-          <td>${o.name}<br><small>${o.phone}</small></td>
+          <td>${o.name}</td>
+          <td>${o.phone}</td>
           <td>${o.address}</td>
           <td>${o.items.map(i=>`${i.name} ${i.size} x${i.qty}`).join('<br>')}<br><b>R${o.total}</b></td>
           <td>R${o.total}</td>
